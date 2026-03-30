@@ -1,0 +1,40 @@
+# 🔥 Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+#  VS Code / IDE
+.vscode/
+.idea/
+
+#  OS Files
+.DS_Store
+Thumbs.db
+
+# Environment Variables
+.env
+.venv
+
+#  YOLO / ML Models
+*.pt
+runs/
+
+#  Jupyter / Colab
+*.ipynb_checkpoints
+
+# Temporary files
+*.tmp
+*.bak
