@@ -1,139 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chef Hat Detection</title>
-    <style>
-      :root {
-        --safe: #00c853;
-        --warn: #d50000;
-        --bg: #0f1115;
-        --panel: #151925;
-        --text: #e7ecf4;
-        --muted: #9aa3b2;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: radial-gradient(1200px 600px at 20% 10%, #1a2030, var(--bg));
-        color: var(--text);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-      }
-      .wrap {
-        width: min(1100px, 100%);
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: 24px;
-      }
-      .card {
-        background: var(--panel);
-        border-radius: 18px;
-        padding: 18px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-      }
-      .title {
-        font-size: 24px;
-        margin: 0 0 8px 0;
-        letter-spacing: 0.5px;
-      }
-      .subtitle {
-        margin: 0 0 16px 0;
-        color: var(--muted);
-        font-size: 14px;
-      }
-      .stage {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 4 / 3;
-        background: #0b0e16;
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      video,
-      canvas {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 600;
-        letter-spacing: 0.4px;
-        margin-top: 14px;
-      }
-      .dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--muted);
-      }
-      .legend {
-        display: grid;
-        gap: 10px;
-        margin-top: 16px;
-        font-size: 14px;
-      }
-      .legend span {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .pill {
-        width: 12px;
-        height: 12px;
-        border-radius: 4px;
-      }
-      .log {
-        font-family: "Consolas", "Courier New", monospace;
-        font-size: 12px;
-        color: var(--muted);
-        background: #0c0f18;
-        border-radius: 10px;
-        padding: 12px;
-        height: 220px;
-        overflow: auto;
-      }
-      .btn {
-        background: #1f2a44;
-        color: var(--text);
-        border: 1px solid #2d3d63;
-        border-radius: 10px;
-        padding: 10px 14px;
-        cursor: pointer;
-        transition: transform 0.1s ease, background 0.2s ease;
-      }
-      .btn:hover {
-        background: #263353;
-      }
-      .btn:active {
-        transform: scale(0.98);
-      }
-      @media (max-width: 900px) {
-        .wrap {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
-  </head>
-  <body>
+{% extends "base.html" %}
+{% block title %}Chef Hat Detection{% endblock %}
+{% block head %}
+<style>
+  :root {
+    --safe: #00c853;
+    --warn: #d50000;
+    --muted: #9aa3b2;
+  }
+  .wrap {
+    width: min(1100px, 100%);
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 24px;
+  }
+  .title {
+    font-size: 24px;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.5px;
+  }
+  .subtitle {
+    margin: 0 0 16px 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #0b0e16;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  video,
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    margin-top: 14px;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .legend {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pill {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+  }
+  .log {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: #0c0f18;
+    border-radius: 10px;
+    padding: 12px;
+    height: 220px;
+    overflow: auto;
+  }
+  @media (max-width: 900px) {
+    .wrap {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
     <div class="wrap">
       <div class="card">
-        <h1 class="title">Chef Hat Detection</h1>
-        <p class="subtitle">
-          Live camera feed with YOLOv8 inference (CPU). Press Stop to pause.
-        </p>
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+          "
+        >
+          <div>
+            <h1 class="title">Chef Hat Detection</h1>
+            <p class="subtitle">
+              Live camera feed with YOLOv8 inference (CPU). Press Stop to pause.
+            </p>
+          </div>
+          <form method="post" action="/accounts/logout/">
+            {% csrf_token %}
+            <button class="btn" type="submit">Logout</button>
+          </form>
+        </div>
         <div class="stage">
           <video id="video" autoplay muted playsinline></video>
           <canvas id="overlay"></canvas>
@@ -143,7 +118,7 @@
           <div id="statusText">Starting camera...</div>
         </div>
         <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
-          <button class="btn" id="camBtn">Stop Camera</button>
+          <button class="btn" id="camBtn">Start Camera</button>
           <button class="btn" id="detBtn">Stop Detection</button>
         </div>
       </div>
@@ -157,7 +132,6 @@
         <div class="log" id="log"></div>
       </div>
     </div>
-
     <script>
       const video = document.getElementById("video");
       const overlay = document.getElementById("overlay");
@@ -170,6 +144,7 @@
       let cameraOn = false;
       let detectionOn = true;
       let timer = null;
+      let inFlight = false;
 
       function setStatus(text, color) {
         statusText.textContent = text;
@@ -217,6 +192,8 @@
 
       async function sendFrame() {
         if (!detectionOn || !cameraOn || video.readyState < 2) return;
+        if (inFlight) return;
+        inFlight = true;
         const temp = document.createElement("canvas");
         temp.width = video.videoWidth;
         temp.height = video.videoHeight;
@@ -238,6 +215,8 @@
         } catch (err) {
           setStatus("API error", "#d50000");
           logLine("API error: " + err.message);
+        } finally {
+          inFlight = false;
         }
       }
 
@@ -286,7 +265,7 @@
       }
 
       function startLoop() {
-        timer = setInterval(sendFrame, 500);
+        timer = setInterval(sendFrame, 750);
       }
 
       function stopLoop() {
@@ -321,7 +300,6 @@
 
       window.addEventListener("resize", resizeOverlay);
 
-      startCamera().then(startLoop);
+      setStatus("Camera stopped", "#9aa3b2");
     </script>
-  </body>
-</html>
+{% endblock %}

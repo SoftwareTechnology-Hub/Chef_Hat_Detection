@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Chef Hat Detection{% endblock %}</title>
+    <style>
+      :root {
+        --bg: #0f1115;
+        --panel: #151925;
+        --text: #e7ecf4;
+        --muted: #9aa3b2;
+        --accent: #4fc3f7;
+        --warn: #d50000;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(1000px 600px at 20% 10%, #1a2030, var(--bg));
+        color: var(--text);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        min-height: 100vh;
+      }
+      .sidebar {
+        padding: 24px 18px;
+        background: #0c0f18;
+        border-right: 1px solid #1f2a44;
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: 0.6px;
+        margin-bottom: 18px;
+      }
+      .nav a {
+        display: block;
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: var(--text);
+        text-decoration: none;
+        margin-bottom: 8px;
+        background: #151925;
+        border: 1px solid #1f2a44;
+      }
+      .nav a:hover {
+        background: #1b2131;
+      }
+      .main {
+        padding: 24px;
+      }
+      .card {
+        width: min(900px, 100%);
+        background: var(--panel);
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      }
+      h1 {
+        margin: 0 0 8px 0;
+        font-size: 24px;
+        letter-spacing: 0.5px;
+      }
+      p {
+        margin: 0 0 18px 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .btn {
+        display: inline-block;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid #2d3d63;
+        background: #1f2a44;
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.2s ease;
+      }
+      .btn:hover {
+        background: #263353;
+      }
+      .btn:active {
+        transform: scale(0.98);
+      }
+      @media (max-width: 720px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .nav {
+          display: flex;
+          gap: 8px;
+        }
+        .nav a {
+          margin-bottom: 0;
+        }
+        .card {
+          padding: 20px;
+        }
+        h1 {
+          font-size: 20px;
+        }
+      }
+      .auth .layout {
+        grid-template-columns: 1fr;
+      }
+      .auth .sidebar {
+        display: none;
+      }
+      .auth .main {
+        display: grid;
+        place-items: center;
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">Chef Hat</div>
+        <nav class="nav">
+          <a href="/">Dashboard</a>
+          <a href="/alerts/">Alerts</a>
+        </nav>
+      </aside>
+      <main class="main">{% block content %}{% endblock %}</main>
+    </div>
+  </body>
+</html>
