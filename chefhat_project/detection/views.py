@@ -11,6 +11,7 @@ from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 from ultralytics import YOLO
 
 MODEL_CONF = 0.3
@@ -105,10 +106,17 @@ def alerts(request):
             name = f"{ALERT_PREFIX}{i}.jpg"
             path = media_root / name
             if path.exists():
+                modified_dt = timezone.make_aware(
+                    timezone.datetime.fromtimestamp(path.stat().st_mtime)
+                )
+                modified = timezone.localtime(modified_dt).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
                 files.append(
                     {
                         "name": name,
                         "url": f"{settings.MEDIA_URL}{name}",
+                        "time": modified,
                     }
                 )
     return render(request, "detection/alerts.html", {"files": files})
@@ -201,8 +209,10 @@ def detect(request):
         image_url = request.build_absolute_uri(
             f"{settings.MEDIA_URL}{saved_file}"
         )
+        timestamp = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
         message = (
             "NO HAT detected\n"
+            f"Time: {timestamp}\n"
             f"Confidence: {best_warning_conf:.2f}\n"
             f"Image: {image_url}"
         )
