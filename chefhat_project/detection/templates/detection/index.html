@@ -142,8 +142,9 @@
           <div class="dot" id="statusDot"></div>
           <div id="statusText">Starting camera...</div>
         </div>
-        <div style="margin-top: 12px">
-          <button class="btn" id="toggleBtn">Stop</button>
+        <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
+          <button class="btn" id="camBtn">Stop Camera</button>
+          <button class="btn" id="detBtn">Stop Detection</button>
         </div>
       </div>
       <div class="card">
@@ -164,10 +165,10 @@
       const statusText = document.getElementById("statusText");
       const statusDot = document.getElementById("statusDot");
       const logEl = document.getElementById("log");
-      const toggleBtn = document.getElementById("toggleBtn");
 
       let stream = null;
-      let running = true;
+      let cameraOn = false;
+      let detectionOn = true;
       let timer = null;
 
       function setStatus(text, color) {
@@ -189,6 +190,7 @@
           video.srcObject = stream;
           await video.play();
           resizeOverlay();
+          cameraOn = true;
           setStatus("Camera ready", "#4fc3f7");
           logLine("Camera started");
         } catch (err) {
@@ -197,13 +199,24 @@
         }
       }
 
+      function stopCamera() {
+        if (stream) {
+          stream.getTracks().forEach((t) => t.stop());
+        }
+        stream = null;
+        cameraOn = false;
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        setStatus("Camera stopped", "#9aa3b2");
+        logLine("Camera stopped");
+      }
+
       function resizeOverlay() {
         overlay.width = video.videoWidth;
         overlay.height = video.videoHeight;
       }
 
       async function sendFrame() {
-        if (!running || video.readyState < 2) return;
+        if (!detectionOn || !cameraOn || video.readyState < 2) return;
         const temp = document.createElement("canvas");
         temp.width = video.videoWidth;
         temp.height = video.videoHeight;
@@ -281,15 +294,28 @@
         timer = null;
       }
 
-      toggleBtn.addEventListener("click", () => {
-        running = !running;
-        toggleBtn.textContent = running ? "Stop" : "Start";
-        if (running) {
-          setStatus("Resumed", "#4fc3f7");
-          startLoop();
+      document.getElementById("camBtn").addEventListener("click", async () => {
+        if (!cameraOn) {
+          await startCamera();
+          if (!timer) startLoop();
         } else {
-          setStatus("Paused", "#9aa3b2");
-          stopLoop();
+          stopCamera();
+        }
+        document.getElementById("camBtn").textContent = cameraOn
+          ? "Stop Camera"
+          : "Start Camera";
+      });
+
+      document.getElementById("detBtn").addEventListener("click", () => {
+        detectionOn = !detectionOn;
+        document.getElementById("detBtn").textContent = detectionOn
+          ? "Stop Detection"
+          : "Start Detection";
+        if (detectionOn) {
+          setStatus("Detection resumed", "#4fc3f7");
+        } else {
+          setStatus("Detection paused", "#9aa3b2");
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
         }
       });
 
