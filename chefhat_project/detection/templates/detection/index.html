@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chef Hat Detection</title>
+    <style>
+      :root {
+        --safe: #00c853;
+        --warn: #d50000;
+        --bg: #0f1115;
+        --panel: #151925;
+        --text: #e7ecf4;
+        --muted: #9aa3b2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(1200px 600px at 20% 10%, #1a2030, var(--bg));
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .wrap {
+        width: min(1100px, 100%);
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 24px;
+      }
+      .card {
+        background: var(--panel);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      }
+      .title {
+        font-size: 24px;
+        margin: 0 0 8px 0;
+        letter-spacing: 0.5px;
+      }
+      .subtitle {
+        margin: 0 0 16px 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .stage {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: #0b0e16;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      video,
+      canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        margin-top: 14px;
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+      .legend {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+        font-size: 14px;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .pill {
+        width: 12px;
+        height: 12px;
+        border-radius: 4px;
+      }
+      .log {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 12px;
+        color: var(--muted);
+        background: #0c0f18;
+        border-radius: 10px;
+        padding: 12px;
+        height: 220px;
+        overflow: auto;
+      }
+      .btn {
+        background: #1f2a44;
+        color: var(--text);
+        border: 1px solid #2d3d63;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.2s ease;
+      }
+      .btn:hover {
+        background: #263353;
+      }
+      .btn:active {
+        transform: scale(0.98);
+      }
+      @media (max-width: 900px) {
+        .wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1 class="title">Chef Hat Detection</h1>
+        <p class="subtitle">
+          Live camera feed with YOLOv8 inference (CPU). Press Stop to pause.
+        </p>
+        <div class="stage">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="overlay"></canvas>
+        </div>
+        <div class="status">
+          <div class="dot" id="statusDot"></div>
+          <div id="statusText">Starting camera...</div>
+        </div>
+        <div style="margin-top: 12px">
+          <button class="btn" id="toggleBtn">Stop</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="title" style="font-size: 18px">Detection Feed</h2>
+        <p class="subtitle">Latest model output and confidence.</p>
+        <div class="legend">
+          <span><i class="pill" style="background: var(--safe)"></i> SAFE (Hat)</span>
+          <span><i class="pill" style="background: var(--warn)"></i> WARNING (No Hat)</span>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <script>
+      const video = document.getElementById("video");
+      const overlay = document.getElementById("overlay");
+      const ctx = overlay.getContext("2d");
+      const statusText = document.getElementById("statusText");
+      const statusDot = document.getElementById("statusDot");
+      const logEl = document.getElementById("log");
+      const toggleBtn = document.getElementById("toggleBtn");
+
+      let stream = null;
+      let running = true;
+      let timer = null;
+
+      function setStatus(text, color) {
+        statusText.textContent = text;
+        statusDot.style.background = color;
+      }
+
+      function logLine(line) {
+        const time = new Date().toLocaleTimeString();
+        logEl.innerHTML = `[${time}] ${line}<br/>` + logEl.innerHTML;
+      }
+
+      async function startCamera() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false,
+          });
+          video.srcObject = stream;
+          await video.play();
+          resizeOverlay();
+          setStatus("Camera ready", "#4fc3f7");
+          logLine("Camera started");
+        } catch (err) {
+          setStatus("Camera access denied", "#d50000");
+          logLine("Camera error: " + err.message);
+        }
+      }
+
+      function resizeOverlay() {
+        overlay.width = video.videoWidth;
+        overlay.height = video.videoHeight;
+      }
+
+      async function sendFrame() {
+        if (!running || video.readyState < 2) return;
+        const temp = document.createElement("canvas");
+        temp.width = video.videoWidth;
+        temp.height = video.videoHeight;
+        const tctx = temp.getContext("2d");
+        tctx.drawImage(video, 0, 0, temp.width, temp.height);
+        const dataUrl = temp.toDataURL("image/jpeg", 0.7);
+
+        try {
+          const res = await fetch("/api/detect/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: dataUrl }),
+          });
+          if (!res.ok) {
+            throw new Error("API error");
+          }
+          const data = await res.json();
+          drawDetections(data);
+        } catch (err) {
+          setStatus("API error", "#d50000");
+          logLine("API error: " + err.message);
+        }
+      }
+
+      function drawDetections(data) {
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        const detections = data.detections || [];
+
+        if (detections.length === 0) {
+          setStatus("No detections", "#ffb300");
+          return;
+        }
+
+        let hasWarning = false;
+        let hasSafe = false;
+
+        detections.forEach((det) => {
+          const { x1, y1, x2, y2 } = det.box;
+          const color = det.color || "#ffb300";
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+          ctx.fillStyle = color;
+          ctx.font = "16px Segoe UI";
+          ctx.fillText(
+            `${det.status} ${det.confidence.toFixed(2)}`,
+            x1,
+            Math.max(20, y1 - 6)
+          );
+
+          if (det.status === "WARNING") hasWarning = true;
+          if (det.status === "SAFE") hasSafe = true;
+        });
+
+        if (hasWarning) {
+          setStatus("WARNING: No Hat", "#d50000");
+        } else if (hasSafe) {
+          setStatus("SAFE: Hat detected", "#00c853");
+        } else {
+          setStatus("Unknown state", "#ffb300");
+        }
+
+        const top = detections[0];
+        logLine(
+          `${top.label} (${top.status}) conf=${top.confidence.toFixed(2)}`
+        );
+      }
+
+      function startLoop() {
+        timer = setInterval(sendFrame, 500);
+      }
+
+      function stopLoop() {
+        if (timer) clearInterval(timer);
+        timer = null;
+      }
+
+      toggleBtn.addEventListener("click", () => {
+        running = !running;
+        toggleBtn.textContent = running ? "Stop" : "Start";
+        if (running) {
+          setStatus("Resumed", "#4fc3f7");
+          startLoop();
+        } else {
+          setStatus("Paused", "#9aa3b2");
+          stopLoop();
+        }
+      });
+
+      window.addEventListener("resize", resizeOverlay);
+
+      startCamera().then(startLoop);
+    </script>
+  </body>
+</html>
