@@ -100,7 +100,7 @@ POST /api/detect/
 }
 ```
 
-## Telegram Alerts (Optional)
+## Telegram Alerts 
 Create a `.env` file in `chefhat_project/`:
 ```
 TELEGRAM_BOT_TOKEN=your_bot_token_here
